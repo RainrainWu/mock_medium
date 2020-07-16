@@ -1,0 +1,10 @@
+# Mac artifacts
+.DS_Store
+
+# cached
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# log files
+logs/file_*
