@@ -6,8 +6,8 @@ urlpatterns = [
     path("", views.index, name="index"),
 
     # users resources
-    path("v1/users/", views.users, name="users"),
-    path("v1/users/<str:user_id>/", views.user, name="user"),
+    path("v1/users/", views.Users.as_view(), name="users"),
+    path("v1/users/<str:user_id>/", views.User.as_view(), name="user"),
 
     # publictions
     path("v1/publications/", views.publications, name="publications"),

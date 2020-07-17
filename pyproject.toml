@@ -7,6 +7,7 @@ authors = ["RainrainWu <s0958334772@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 Django = "3.0.8"
+requests = "2.24.0"
 
 [tool.poetry.dev-dependencies]
 

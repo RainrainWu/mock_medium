@@ -1,17 +1,106 @@
+import json
+
 from django.http import JsonResponse
+from django.forms.models import model_to_dict
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+
+from . import models
+from . import resp
+
 
 def index(request):
     return JsonResponse({"msg": "the index of cms"})
 
-def users(request):
-    msg = "users resource"
-    return JsonResponse({"msg": msg})
 
-def user(request, user_id):
-    msg = "user resource of {USER_ID}".format(
-        USER_ID=user_id
-    )
-    return JsonResponse({"msg": msg})
+class Users(View):
+
+    def get(self, request, *args, **kwargs):
+        users = models.User.objects.all()
+        users = [model_to_dict(x) for x in users]
+        payload = resp.generate_collection(collection=users)
+        return JsonResponse(payload, status=200)
+        
+    def post(self, request, *args, **kwargs):
+        json_data = json.loads(request.body)
+        users = models.User.objects.filter(name=json_data["name"])
+        if users.count != 0:
+            payload = resp.generate_error(
+                code=409,
+                message="user already exist"
+            )
+            return JsonResponse(payload, status=409)
+        
+        user = models.User.objects.get(name=json_data["name"])
+        payload = resp.generate_acknowledge(
+            code=201,
+            message="user created",
+            data=model_to_dict(user)
+        )
+        return JsonResponse(payload, status=201)
+
+
+class User(View):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            user = models.User.objects.get(name=self.kwargs["user_id"])
+            payload = resp.generate_acknowledge(
+                data=model_to_dict(user)
+            )
+            return JsonResponse(payload, status=200)
+        except models.User.DoesNotExist as err:
+            payload = resp.generate_error(
+                code=404,
+                message=str(err),
+            )
+            return JsonResponse(payload, status=404)
+
+    def put(self, request, *args, **kwargs):
+        json_data = json.loads(request.body)
+        try:
+            user = models.User.objects.get(
+                name=self.kwargs["user_id"]
+            )
+            for key in json_data:
+                if not hasattr(user, key):
+                    raise AttributeError(key)
+                setattr(user, key, json_data[key])
+            user.save()
+            payload = resp.generate_acknowledge(
+                message="resource updated",
+                data=model_to_dict(user)
+            )
+            return JsonResponse(payload, status=200)
+        except AttributeError as err:
+            payload = resp.generate_error(
+                code=400,
+                message="user does not has attribute \"{ATTRIBUTE}\"".format(
+                    ATTRIBUTE=str(err)
+                ),
+            )
+            return JsonResponse(payload, status=400)
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(
+                code=404,
+                message="user not found",
+            )
+            return JsonResponse(payload, status=404)
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            models.User.objects.get(name=self.kwargs["user_id"]).delete()
+            payload = resp.generate_acknowledge(
+                message="user deleted"
+            )
+            return JsonResponse(payload, status=200)
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(
+                code=404,
+                message="user not found",
+            )
+            return JsonResponse(payload, status=404)
+
 
 def stories(request):
     msg = "stories resource"
