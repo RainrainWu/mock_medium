@@ -8,6 +8,7 @@ urlpatterns = [
     # users resources
     path("v1/users/", views.Users.as_view(), name="users"),
     path("v1/users/<str:user_id>/", views.User.as_view(), name="user"),
+    path("v1/users/<str:user_id>/followingusers/", views.FollowingUsers.as_view(), name="followingusers"),
 
     # publictions
     path("v1/publications/", views.publications, name="publications"),

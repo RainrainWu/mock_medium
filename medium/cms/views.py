@@ -17,21 +17,25 @@ class Users(View):
 
     def get(self, request, *args, **kwargs):
         users = models.User.objects.all()
-        users = [model_to_dict(x) for x in users]
+        users = [model_to_dict(x, fields=["name", "introduction"]) for x in users]
         payload = resp.generate_collection(collection=users)
         return JsonResponse(payload, status=200)
-        
+
     def post(self, request, *args, **kwargs):
         json_data = json.loads(request.body)
         users = models.User.objects.filter(name=json_data["name"])
-        if users.count != 0:
+        if users.count() != 0:
             payload = resp.generate_error(
                 code=409,
                 message="user already exist"
             )
             return JsonResponse(payload, status=409)
         
-        user = models.User.objects.get(name=json_data["name"])
+        user = models.User(
+            name=json_data["name"],
+            introduction=json_data["introduction"]
+        )
+        user.save()
         payload = resp.generate_acknowledge(
             code=201,
             message="user created",
@@ -101,6 +105,50 @@ class User(View):
             )
             return JsonResponse(payload, status=404)
 
+
+class FollowingUsers(View):
+
+    def get(self, request, *args, **kwargs):
+        user = models.User.objects.get(name=self.kwargs["user_id"])
+        followings = models.FollowingUser.objects.filter(from_user=user).values(
+            "from_user__name",
+            "to_user__name"
+        )
+        payload = resp.generate_collection(collection=list(followings))
+        return JsonResponse(payload, status=200)
+    
+
+    def post(self, request, *args, **kwargs):
+        json_data = json.loads(request.body)
+
+        try:
+            from_user = models.User.objects.get(name=self.kwargs["user_id"])
+            print(from_user)
+            to_user = models.User.objects.get(name=json_data["to_user"])
+            followings = models.FollowingUser.objects.filter(
+                from_user=from_user,
+                to_user=to_user
+            )
+            if followings.count() != 0:
+                payload = resp.generate_error(
+                    code=409,
+                    message="user already followed"
+                )
+                return JsonResponse(payload, status=409)
+            
+            from_user.following_users.add(to_user)
+            payload = resp.generate_acknowledge(
+                code=201,
+                message="user followed",
+                data=model_to_dict(from_user, fields=["name", "introduction"])
+            )
+            return JsonResponse(payload, status=201)
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(
+                code=404,
+                message="user not found",
+            )
+            return JsonResponse(payload, status=404)
 
 def stories(request):
     msg = "stories resource"

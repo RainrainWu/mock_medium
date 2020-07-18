@@ -8,13 +8,13 @@ class User(models.Model):
     introduction = models.CharField(max_length=200)
     following_users = models.ManyToManyField(
         "self",
-        through="UserFollowing",
+        through="FollowingUser",
         symmetrical=False,
         related_name="following"
     )
 
 
-class UserFollowing(models.Model):
+class FollowingUser(models.Model):
 
     from_user = models.ForeignKey(User, related_name="from_user", on_delete=models.CASCADE)
     to_user = models.ForeignKey(User, related_name="to_user", on_delete=models.CASCADE)
