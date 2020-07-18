@@ -50,8 +50,8 @@ class User(View):
             payload = resp.generate_acknowledge(data=model_to_dict(user))
             return JsonResponse(payload, status=200)
         
-        except models.User.DoesNotExist as err:
-            payload = resp.generate_error(code=404, message=str(err))
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
             return JsonResponse(payload, status=404)
 
     def put(self, request, *args, **kwargs):
@@ -75,7 +75,7 @@ class User(View):
         except AttributeError as err:
             payload = resp.generate_error(
                 code=400,
-                message="user does not has attribute \"{ATTRIBUTE}\"".format(
+                message="invalid attribute \"{ATTRIBUTE}\"".format(
                     ATTRIBUTE=str(err)
                 ),
             )
@@ -165,7 +165,7 @@ class FollowingUser(View):
             )
             payload = resp.generate_acknowledge(data=list(followings)[0])
             return JsonResponse(payload, status=200)
-        
+
         except models.User.DoesNotExist:
             payload = resp.generate_error(code=404, message="user not found")
             return JsonResponse(payload, status=404)
@@ -187,6 +187,95 @@ class FollowingUser(View):
             payload = resp.generate_error(code=404, message="user not found")
             return JsonResponse(payload, status=404)
 
+
+class Publications(View):
+
+    def get(self, request, *args, **kwargs):
+        pubs = models.Publication.objects.all()
+        pubs = [model_to_dict(x, fields=["name", "introduction"]) for x in pubs]
+        payload = resp.generate_collection(collection=pubs)
+        return JsonResponse(payload, status=200)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            json_data = json.loads(request.body)
+            pubs = models.Publication.objects.filter(name=json_data["name"])
+            if pubs.count() != 0:
+                payload = resp.generate_error(code=409, message="publication already exist")
+                return JsonResponse(payload, status=409)
+            
+            user = models.User.objects.get(name=json_data["owner"])
+            pub = models.Publication(
+                name=json_data["name"],
+                introduction=json_data["introduction"],
+                owner=user
+            )
+            pub.save()
+            payload = resp.generate_acknowledge(
+                code=201,
+                message="publication created",
+                data=model_to_dict(pub)
+            )
+            return JsonResponse(payload, status=201)
+
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
+            return JsonResponse(payload, status=404)
+
+
+class Publication(View):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            pub = models.Publication.objects.get(name=self.kwargs["pub_id"])
+            payload = resp.generate_acknowledge(data=model_to_dict(pub))
+            return JsonResponse(payload, status=200)
+        
+        except models.Publication.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publication not found")
+            return JsonResponse(payload, status=404)
+
+    def put(self, request, *args, **kwargs):
+        json_data = json.loads(request.body)
+        try:
+            pub = models.Publication.objects.get(name=self.kwargs["pub_id"])
+            for key in json_data:
+                if key not in ["introduction"]:
+                    raise AttributeError(key)
+                setattr(pub, key, json_data[key])
+            pub.save()
+            payload = resp.generate_acknowledge(
+                message="publication updated",
+                data=model_to_dict(pub)
+            )
+            return JsonResponse(payload, status=200)
+        
+        except AttributeError as err:
+            payload = resp.generate_error(
+                code=400,
+                message="invalid attribute \"{ATTRIBUTE}\"".format(
+                    ATTRIBUTE=str(err)
+                ),
+            )
+            return JsonResponse(payload, status=400)
+        
+        except models.Publication.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publication not found")
+            return JsonResponse(payload, status=404)
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            models.Publication.objects.get(name=self.kwargs["pub_id"]).delete()
+            payload = resp.generate_acknowledge(
+                message="publication deleted"
+            )
+            return JsonResponse(payload, status=200)
+        
+        except models.Publication.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publicaiton not found")
+            return JsonResponse(payload, status=404)
+
+
 def stories(request):
     msg = "stories resource"
     return JsonResponse({"msg": msg})
@@ -194,15 +283,5 @@ def stories(request):
 def story(request, story_id):
     msg = "story resource of {STORY_ID}".format(
         STORY_ID=story_id
-    )
-    return JsonResponse({"msg": msg})
-
-def publications(request):
-    msg = "publications resource"
-    return JsonResponse({"msg": msg})
-
-def publication(request, publication_id):
-    msg = "publication resource of {PUBLICATION_ID}".format(
-        PUBLICATION_ID=publication_id
     )
     return JsonResponse({"msg": msg})

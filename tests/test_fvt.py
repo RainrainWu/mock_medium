@@ -7,7 +7,7 @@ def get_users() -> object:
     print(resp.json())
     return resp
 
-def create_user(user_id: str="", intro: str="") -> object:
+def add_user(user_id: str="", intro: str="") -> object:
     payload = {"name": user_id, "introduction": intro}
     resp = requests.post(
         "http://localhost:8000/cms/v1/users/",
@@ -86,8 +86,55 @@ def delete_following_user(user_id: str="", to_user: str="") -> object:
     print(resp.json())
     return resp
 
-get_users()
-add_following("Rain", "Rain3")
-get_following("Rain")
-delete_following_user("Rain", "Rain3")
-get_following_user("Rain", "Rain3")
+def get_publications() -> object:
+    resp = requests.get(
+        "http://localhost:8000/cms/v1/publications/"
+    )
+    print(resp.json())
+    return resp
+
+def add_publication(name: str="", intro: str="", owner: str="") -> object:
+    payload = {"name": name, "introduction": intro, "owner": owner}
+    resp = requests.post(
+        "http://localhost:8000/cms/v1/publications/",
+        json=payload
+    )
+    print(resp.json())
+    return resp
+
+def get_publication(pub_id: str="") -> object:
+    resp = requests.get(
+        "http://localhost:8000/cms/v1/publications/{PUB_ID}/".format(
+            PUB_ID=pub_id
+        )
+    )
+    print(resp.json())
+    return resp
+
+def update_publication(pub_id: str="", payload: object={}) -> object:
+    resp = requests.put(
+        "http://localhost:8000/cms/v1/publications/{PUB_ID}/".format(
+            PUB_ID=pub_id
+        ),
+        json=payload
+    )
+    print(resp.json())
+    return resp
+
+def delete_publication(pub_id: str="") -> object:
+    resp = requests.delete(
+        "http://localhost:8000/cms/v1/publications/{PUB_ID}/".format(
+            PUB_ID=pub_id
+        )
+    )
+    print(resp.json())
+    return resp
+
+get_publications()
+add_publication("journal", "journal intro.", "Rain")
+get_publications()
+update_publication("journal", {"introduction": "new journal intro."})
+update_publication("journal", {"introductions": "new journal intro."})
+get_publications()
+delete_publication("journal")
+get_publications()

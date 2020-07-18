@@ -12,8 +12,8 @@ urlpatterns = [
     path("v1/users/<str:user_id>/followingusers/<str:to_user>", views.FollowingUser.as_view(), name="followinguser"),
 
     # publictions
-    path("v1/publications/", views.publications, name="publications"),
-    path("v1/publications/<str:publication_id>/", views.publication, name="publication"),
+    path("v1/publications/", views.Publications.as_view(), name="publications"),
+    path("v1/publications/<str:pub_id>/", views.Publication.as_view(), name="publication"),
 
     # stories resources
     path("v1/stories/", views.stories, name="stories"),

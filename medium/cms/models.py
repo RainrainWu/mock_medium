@@ -10,29 +10,41 @@ class User(models.Model):
         "self",
         through="FollowingUser",
         symmetrical=False,
-        related_name="following"
+        related_name="following_user"
+    )
+    following_publications = models.ManyToManyField(
+        "Publication",
+        through="FollowingPublication",
+        symmetrical=False,
+        related_name="following_publication"
     )
 
 
 class FollowingUser(models.Model):
 
-    from_user = models.ForeignKey(User, related_name="from_user", on_delete=models.CASCADE)
-    to_user = models.ForeignKey(User, related_name="to_user", on_delete=models.CASCADE)
+    from_user = models.ForeignKey("User", related_name="from_user", on_delete=models.CASCADE)
+    to_user = models.ForeignKey("User", related_name="to_user", on_delete=models.CASCADE)
+
+
+class FollowingPublication(models.Model):
+
+    user = models.ForeignKey("User", related_name="user", on_delete=models.CASCADE)
+    publication = models.ForeignKey("Publication", related_name="publication", on_delete=models.CASCADE)
 
 
 class Publication(models.Model):
 
     name = models.CharField(max_length=40)
     introduction = models.CharField(max_length=200)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey("User", on_delete=models.CASCADE)
     editors = models.ManyToManyField(
-        User,
+        "User",
         through="PublicationEditor",
         symmetrical=False,
         related_name="editors"
     )
     writers = models.ManyToManyField(
-        User,
+        "User",
         through="PublicationWriter",
         symmetrical=False,
         related_name="writers"
@@ -41,14 +53,14 @@ class Publication(models.Model):
 
 class PublicationEditor(models.Model):
 
-    user = models.ForeignKey(User, related_name="editor", on_delete=models.CASCADE)
-    publication = models.ForeignKey(Publication, related_name="publication_editor", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", related_name="editor", on_delete=models.CASCADE)
+    publication = models.ForeignKey("Publication", related_name="publication_editor", on_delete=models.CASCADE)
 
 
 class PublicationWriter(models.Model):
 
-    user = models.ForeignKey(User, related_name="writer", on_delete=models.CASCADE)
-    publication = models.ForeignKey(Publication, related_name="publication_writer", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", related_name="writer", on_delete=models.CASCADE)
+    publication = models.ForeignKey("Publication", related_name="publication_writer", on_delete=models.CASCADE)
 
 
 # class Story(models.Model):
