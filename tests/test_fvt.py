@@ -46,7 +46,7 @@ def delete_user(user_id: str="") -> object:
     print(resp.json())
     return resp
 
-def get_user_following_user(user_id: str="") -> object:
+def get_following(user_id: str="") -> object:
     resp = requests.get(
         "http://localhost:8000/cms/v1/users/{USER_ID}/followingusers/".format(
             USER_ID=user_id
@@ -55,7 +55,7 @@ def get_user_following_user(user_id: str="") -> object:
     print(resp.json())
     return resp
 
-def add_user_following_user(user_id: str="", to_user: str="") -> object:
+def add_following(user_id: str="", to_user: str="") -> object:
     payload = {"to_user": to_user}
     resp = requests.post(
         "http://localhost:8000/cms/v1/users/{USER_ID}/followingusers/".format(
@@ -66,8 +66,28 @@ def add_user_following_user(user_id: str="", to_user: str="") -> object:
     print(resp.json())
     return resp
 
+def get_following_user(user_id: str="", to_user: str="") -> object:
+    resp = requests.get(
+        "http://localhost:8000/cms/v1/users/{USER_ID}/followingusers/{TO_USER}".format(
+            USER_ID=user_id,
+            TO_USER=to_user
+        )
+    )
+    print(resp.json())
+    return resp
+
+def delete_following_user(user_id: str="", to_user: str="") -> object:
+    resp = requests.delete(
+        "http://localhost:8000/cms/v1/users/{USER_ID}/followingusers/{TO_USER}".format(
+            USER_ID=user_id,
+            TO_USER=to_user
+        )
+    )
+    print(resp.json())
+    return resp
+
 get_users()
-add_user_following_user("Rain", "Rain3")
-add_user_following_user("Rain3", "Rain")
-get_user_following_user("Rain")
-get_user_following_user("Rain3")
+add_following("Rain", "Rain3")
+get_following("Rain")
+delete_following_user("Rain", "Rain3")
+get_following_user("Rain", "Rain3")

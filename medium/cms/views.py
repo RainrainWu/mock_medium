@@ -25,10 +25,7 @@ class Users(View):
         json_data = json.loads(request.body)
         users = models.User.objects.filter(name=json_data["name"])
         if users.count() != 0:
-            payload = resp.generate_error(
-                code=409,
-                message="user already exist"
-            )
+            payload = resp.generate_error(code=409, message="user already exist")
             return JsonResponse(payload, status=409)
         
         user = models.User(
@@ -47,20 +44,18 @@ class Users(View):
 class User(View):
 
     def get(self, request, *args, **kwargs):
+        
         try:
             user = models.User.objects.get(name=self.kwargs["user_id"])
-            payload = resp.generate_acknowledge(
-                data=model_to_dict(user)
-            )
+            payload = resp.generate_acknowledge(data=model_to_dict(user))
             return JsonResponse(payload, status=200)
+        
         except models.User.DoesNotExist as err:
-            payload = resp.generate_error(
-                code=404,
-                message=str(err),
-            )
+            payload = resp.generate_error(code=404, message=str(err))
             return JsonResponse(payload, status=404)
 
     def put(self, request, *args, **kwargs):
+        
         json_data = json.loads(request.body)
         try:
             user = models.User.objects.get(
@@ -76,6 +71,7 @@ class User(View):
                 data=model_to_dict(user)
             )
             return JsonResponse(payload, status=200)
+        
         except AttributeError as err:
             payload = resp.generate_error(
                 code=400,
@@ -84,46 +80,47 @@ class User(View):
                 ),
             )
             return JsonResponse(payload, status=400)
+        
         except models.User.DoesNotExist:
-            payload = resp.generate_error(
-                code=404,
-                message="user not found",
-            )
+            payload = resp.generate_error(code=404, message="user not found")
             return JsonResponse(payload, status=404)
 
     def delete(self, request, *args, **kwargs):
+        
         try:
             models.User.objects.get(name=self.kwargs["user_id"]).delete()
             payload = resp.generate_acknowledge(
                 message="user deleted"
             )
             return JsonResponse(payload, status=200)
+        
         except models.User.DoesNotExist:
-            payload = resp.generate_error(
-                code=404,
-                message="user not found",
-            )
+            payload = resp.generate_error(code=404, message="user not found")
             return JsonResponse(payload, status=404)
 
 
 class FollowingUsers(View):
 
     def get(self, request, *args, **kwargs):
-        user = models.User.objects.get(name=self.kwargs["user_id"])
-        followings = models.FollowingUser.objects.filter(from_user=user).values(
-            "from_user__name",
-            "to_user__name"
-        )
-        payload = resp.generate_collection(collection=list(followings))
-        return JsonResponse(payload, status=200)
-    
+
+        try:
+            user = models.User.objects.get(name=self.kwargs["user_id"])
+            followings = models.FollowingUser.objects.filter(from_user=user).values(
+                "from_user__name",
+                "to_user__name"
+            )
+            payload = resp.generate_collection(collection=list(followings))
+            return JsonResponse(payload, status=200)
+        
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
+            return JsonResponse(payload, status=404)
 
     def post(self, request, *args, **kwargs):
         json_data = json.loads(request.body)
 
         try:
             from_user = models.User.objects.get(name=self.kwargs["user_id"])
-            print(from_user)
             to_user = models.User.objects.get(name=json_data["to_user"])
             followings = models.FollowingUser.objects.filter(
                 from_user=from_user,
@@ -143,11 +140,51 @@ class FollowingUsers(View):
                 data=model_to_dict(from_user, fields=["name", "introduction"])
             )
             return JsonResponse(payload, status=201)
+        
         except models.User.DoesNotExist:
             payload = resp.generate_error(
                 code=404,
                 message="user not found",
             )
+            return JsonResponse(payload, status=404)
+
+
+class FollowingUser(View):
+
+    def get(self, request, *args, **kwargs):
+
+        try:
+            from_user = models.User.objects.get(name=self.kwargs["user_id"])
+            to_user = models.User.objects.get(name=self.kwargs["to_user"])
+            followings = models.FollowingUser.objects.filter(
+                from_user=from_user,
+                to_user=to_user
+            ).values(
+                "from_user__name",
+                "to_user__name"
+            )
+            payload = resp.generate_acknowledge(data=list(followings)[0])
+            return JsonResponse(payload, status=200)
+        
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
+            return JsonResponse(payload, status=404)
+        
+        except IndexError:
+            payload = resp.generate_error(code=404, message="user not followed")
+            return JsonResponse(payload, status=404)
+
+    def delete(self, request, *args, **kwargs):
+
+        try:
+            from_user = models.User.objects.get(name=self.kwargs["user_id"])
+            to_user = models.User.objects.get(name=self.kwargs["to_user"])
+            from_user.following_users.remove(to_user)
+            payload = resp.generate_acknowledge(message="user unfollowed")
+            return JsonResponse(payload, status=200)
+        
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
             return JsonResponse(payload, status=404)
 
 def stories(request):
