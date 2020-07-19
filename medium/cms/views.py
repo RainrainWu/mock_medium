@@ -282,13 +282,21 @@ class PublicationMembers(View):
         try:
             pub = models.Publication.objects.get(name=self.kwargs["pub_id"])
             level = request.GET.get("level")
-            members = models.PublicationMember.objects.filter(
-                publication=pub,
-                level=level
-            ).values(
-                "user__name",
-                "level"
-            )
+            if level is not None:
+                members = models.PublicationMember.objects.filter(
+                    publication=pub,
+                    level=level
+                ).values(
+                    "user__name",
+                    "level"
+                )
+            else:
+                members = models.PublicationMember.objects.filter(
+                    publication=pub
+                ).values(
+                    "user__name",
+                    "level"
+                )
             payload = resp.generate_collection(collection=list(members))
             return JsonResponse(payload, status=200)
 
@@ -304,13 +312,12 @@ class PublicationMembers(View):
             user = models.User.objects.get(name=json_data["user_id"])
             members = models.PublicationMember.objects.filter(
                 publication=pub,
-                user=user,
-                level=json_data["level"]
+                user=user
             )
             if members.count() != 0:
                 payload = resp.generate_error(
                     code=409,
-                    message="user already register as " + json_data["level"]
+                    message="user already register as " + list(members)[0].level
                 )
                 return JsonResponse(payload, status=409)
 
@@ -334,6 +341,91 @@ class PublicationMembers(View):
         except models.User.DoesNotExist:
             payload = resp.generate_error(code=404, message="user not found")
             return JsonResponse(payload, status=404)
+
+
+class PublicationMember(View):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            pub = models.Publication.objects.get(name=self.kwargs["pub_id"])
+            user = models.User.objects.get(name=self.kwargs["user_id"])
+            members = models.PublicationMember.objects.filter(
+                publication=pub,
+                user=user
+            ).values(
+                "publication__name",
+                "user__name",
+                "level"
+            )
+            if members.count() == 0:
+                payload = resp.generate_error(code=404, message="user not a member")
+                return JsonResponse(payload, status=404)
+
+            payload = resp.generate_acknowledge(data=list(members)[0])
+            return JsonResponse(payload, status=200)
+
+        except models.Publication.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publication not found")
+            return JsonResponse(payload, status=404)
+
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
+            return JsonResponse(payload, status=404)
+    
+    def put(self, request, *args, **kwargs):
+        json_data = json.loads(request.body)
+        try:
+            pub = models.Publication.objects.get(name=self.kwargs["pub_id"])
+            user = models.User.objects.get(name=self.kwargs["user_id"])
+            member = models.PublicationMember.objects.get(
+                publication=pub,
+                user=user
+            )
+            for key in json_data:
+                if key not in ["level"]:
+                    raise AttributeError(key)
+                setattr(member, key, json_data[key])
+            member.save()
+            payload = resp.generate_acknowledge(
+                message="publication member updated",
+                data=model_to_dict(member)
+            )
+            return JsonResponse(payload, status=200)
+        
+        except AttributeError as err:
+            payload = resp.generate_error(
+                code=400,
+                message="invalid attribute \"{ATTRIBUTE}\"".format(
+                    ATTRIBUTE=str(err)
+                ),
+            )
+            return JsonResponse(payload, status=400)
+        
+        except models.Publication.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publication not found")
+            return JsonResponse(payload, status=404)
+
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
+            return JsonResponse(payload, status=404)
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            pub = models.Publication.objects.get(name=self.kwargs["pub_id"])
+            user = models.User.objects.get(name=self.kwargs["user_id"])
+            models.PublicationMember.objects.get(
+                publication=pub,
+                user=user
+            ).delete()
+            payload = resp.generate_acknowledge(
+                message="publication member deleted"
+            )
+            return JsonResponse(payload, status=200)
+        
+        except models.PublicationMember.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publicaiton member not found")
+            return JsonResponse(payload, status=404)
+
 
 def stories(request):
     msg = "stories resource"

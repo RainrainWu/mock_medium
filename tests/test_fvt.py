@@ -130,17 +130,24 @@ def delete_publication(pub_id: str="") -> object:
     print(resp.json())
     return resp
 
-def get_publication_members(pub_id: str="") -> object:
-    resp = requests.get(
-        "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/?level={LEVEL}".format(
-            PUB_ID=pub_id,
-            LEVEL="editor"
+def get_publication_members(pub_id: str="", level: str="") -> object:
+    if level == "":
+        resp = requests.get(
+            "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/".format(
+                PUB_ID=pub_id
+            )
         )
-    )
+    else:
+        resp = requests.get(
+            "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/?level={LEVEL}".format(
+                PUB_ID=pub_id,
+                LEVEL=level
+            )
+        )
     print(resp.json())
     return resp
 
-def add_publication_members(pub_id: str="", user_id: str="", level: str="") -> object:
+def add_publication_member(pub_id: str="", user_id: str="", level: str="") -> object:
     payload = {"user_id": user_id, "level": level}
     resp = requests.post(
         "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/".format(
@@ -151,7 +158,39 @@ def add_publication_members(pub_id: str="", user_id: str="", level: str="") -> o
     print(resp.json())
     return resp
 
+def get_publication_member(pub_id: str="", user_id: str="") -> object:
+    resp = requests.get(
+        "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/{USER_ID}/".format(
+            PUB_ID=pub_id,
+            USER_ID=user_id
+        )
+    )
+    print(resp.json())
+    return resp
+
+def update_publication_member(pub_id: str="", user_id: str="", level: str="") -> object:
+    payload = {"level": level}
+    resp = requests.put(
+        "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/{USER_ID}/".format(
+            PUB_ID=pub_id,
+            USER_ID=user_id
+        ),
+        json=payload
+    )
+    print(resp.json())
+    return resp
+
+def delete_publication_member(pub_id: str="", user_id: str="") -> object:
+    resp = requests.delete(
+        "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/{USER_ID}/".format(
+            PUB_ID=pub_id,
+            USER_ID=user_id
+        )
+    )
+    print(resp.json())
+    return resp
+
 get_publications()
 get_publication_members("journal")
-add_publication_members("journal", "Rain2", "editor")
+delete_publication_member("journal", "Rain2")
 get_publication_members("journal")
