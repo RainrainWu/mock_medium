@@ -276,6 +276,65 @@ class Publication(View):
             return JsonResponse(payload, status=404)
 
 
+class PublicationMembers(View):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            pub = models.Publication.objects.get(name=self.kwargs["pub_id"])
+            level = request.GET.get("level")
+            members = models.PublicationMember.objects.filter(
+                publication=pub,
+                level=level
+            ).values(
+                "user__name",
+                "level"
+            )
+            payload = resp.generate_collection(collection=list(members))
+            return JsonResponse(payload, status=200)
+
+        except models.Publication.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publication not found")
+            return JsonResponse(payload, status=404)
+
+    def post(self, request, *args, **kwargs):
+        json_data = json.loads(request.body)
+
+        try:
+            pub = models.Publication.objects.get(name=self.kwargs["pub_id"])
+            user = models.User.objects.get(name=json_data["user_id"])
+            members = models.PublicationMember.objects.filter(
+                publication=pub,
+                user=user,
+                level=json_data["level"]
+            )
+            if members.count() != 0:
+                payload = resp.generate_error(
+                    code=409,
+                    message="user already register as " + json_data["level"]
+                )
+                return JsonResponse(payload, status=409)
+
+            member = models.PublicationMember(
+                publication=pub,
+                user=user,
+                level=json_data["level"]
+            )
+            member.save()
+            payload = resp.generate_acknowledge(
+                code=201,
+                message="user registered",
+                data=model_to_dict(member, fields=["name", "introduction"])
+            )
+            return JsonResponse(payload, status=201)
+
+        except models.Publication.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publication not found")
+            return JsonResponse(payload, status=404)
+
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
+            return JsonResponse(payload, status=404)
+
 def stories(request):
     msg = "stories resource"
     return JsonResponse({"msg": msg})

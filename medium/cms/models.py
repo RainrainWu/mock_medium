@@ -37,31 +37,19 @@ class Publication(models.Model):
     name = models.CharField(max_length=40)
     introduction = models.CharField(max_length=200)
     owner = models.ForeignKey("User", on_delete=models.CASCADE)
-    editors = models.ManyToManyField(
+    members = models.ManyToManyField(
         "User",
-        through="PublicationEditor",
+        through="PublicationMember",
         symmetrical=False,
         related_name="editors"
     )
-    writers = models.ManyToManyField(
-        "User",
-        through="PublicationWriter",
-        symmetrical=False,
-        related_name="writers"
-    )
 
 
-class PublicationEditor(models.Model):
+class PublicationMember(models.Model):
 
-    user = models.ForeignKey("User", related_name="editor", on_delete=models.CASCADE)
     publication = models.ForeignKey("Publication", related_name="publication_editor", on_delete=models.CASCADE)
-
-
-class PublicationWriter(models.Model):
-
-    user = models.ForeignKey("User", related_name="writer", on_delete=models.CASCADE)
-    publication = models.ForeignKey("Publication", related_name="publication_writer", on_delete=models.CASCADE)
-
+    user = models.ForeignKey("User", related_name="editor", on_delete=models.CASCADE)
+    level = models.CharField(max_length=32)
 
 # class Story(models.Model):
     

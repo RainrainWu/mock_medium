@@ -130,11 +130,28 @@ def delete_publication(pub_id: str="") -> object:
     print(resp.json())
     return resp
 
+def get_publication_members(pub_id: str="") -> object:
+    resp = requests.get(
+        "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/?level={LEVEL}".format(
+            PUB_ID=pub_id,
+            LEVEL="editor"
+        )
+    )
+    print(resp.json())
+    return resp
+
+def add_publication_members(pub_id: str="", user_id: str="", level: str="") -> object:
+    payload = {"user_id": user_id, "level": level}
+    resp = requests.post(
+        "http://localhost:8000/cms/v1/publications/{PUB_ID}/members/".format(
+            PUB_ID=pub_id
+        ),
+        json=payload
+    )
+    print(resp.json())
+    return resp
+
 get_publications()
-add_publication("journal", "journal intro.", "Rain")
-get_publications()
-update_publication("journal", {"introduction": "new journal intro."})
-update_publication("journal", {"introductions": "new journal intro."})
-get_publications()
-delete_publication("journal")
-get_publications()
+get_publication_members("journal")
+add_publication_members("journal", "Rain2", "editor")
+get_publication_members("journal")
