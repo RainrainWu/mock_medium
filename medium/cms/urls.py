@@ -18,6 +18,6 @@ urlpatterns = [
     path("v1/publications/<str:pub_id>/members/<str:user_id>/", views.PublicationMember.as_view(), name="publication_member"),
 
     # stories resources
-    path("v1/stories/", views.stories, name="stories"),
-    path("v1/stories/<str:story_id>/", views.story, name="story"),
+    path("v1/stories/", views.Stories.as_view(), name="stories"),
+    path("v1/stories/<str:story_id>/", views.Story.as_view(), name="story"),
 ]

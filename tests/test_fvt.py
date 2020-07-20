@@ -190,7 +190,48 @@ def delete_publication_member(pub_id: str="", user_id: str="") -> object:
     print(resp.json())
     return resp
 
-get_publications()
-get_publication_members("journal")
-delete_publication_member("journal", "Rain2")
-get_publication_members("journal")
+def get_stories(pub_id: str="", tag: str="") -> object:
+    if pub_id == "" and tag == "":
+        resp = requests.get("http://localhost:8000/cms/v1/stories/")
+    else:
+        query_list = []
+        if pub_id != "":
+            query_list += ["pub_id=" + pub_id]
+        if tag != "":
+            query_list += ["tag=" + tag]
+        query_str = "?" + "&".join(query_list)
+        resp = requests.get(
+            "http://localhost:8000/cms/v1/stories/{QUERY_STR}".format(
+                QUERY_STR=query_str
+            )
+        )
+    print(resp.json())
+    return resp
+
+def add_stories(title: str="", content: str="", author: str="", pub_id: str="", tag: list=[]) -> object:
+    payload = {
+        "title": title,
+        "content": content,
+        "user_id": author,
+        "pub_id": pub_id,
+        "tag": tag
+    }
+    resp = requests.post(
+        "http://localhost:8000/cms/v1/stories/",
+        json=payload
+    )
+    print(resp.json())
+    return resp
+
+def get_story(story_id: str="") -> object:
+    resp = requests.get(
+        "http://localhost:8000/cms/v1/stories/{STORY_ID}/".format(
+            STORY_ID=story_id
+        )
+    )
+    print(resp.json())
+    return resp
+
+# get_stories()
+# add_stories("Title2", "Content2", "Rain2", "journal")
+get_story("Title2")

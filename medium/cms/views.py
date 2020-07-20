@@ -86,7 +86,7 @@ class User(View):
             return JsonResponse(payload, status=404)
 
     def delete(self, request, *args, **kwargs):
-        
+
         try:
             models.User.objects.get(name=self.kwargs["user_id"]).delete()
             payload = resp.generate_acknowledge(
@@ -427,12 +427,99 @@ class PublicationMember(View):
             return JsonResponse(payload, status=404)
 
 
-def stories(request):
-    msg = "stories resource"
-    return JsonResponse({"msg": msg})
+class Stories(View):
 
-def story(request, story_id):
-    msg = "story resource of {STORY_ID}".format(
-        STORY_ID=story_id
-    )
-    return JsonResponse({"msg": msg})
+    def get(self, request, *args, **kwargs):
+        try:
+            stories = models.Story.objects.all()
+            pub = request.GET.get("publication")
+            if pub is not None:
+                stories = stories.filter(publication=pub)
+            tag = request.GET.get("tag")
+            if tag is not None:
+                stories = stories.filter(tag=tag)
+            stories = stories.values(
+                "title", "content", "author__name", "publication__name"
+            )
+            payload = resp.generate_collection(collection=list(stories))
+            return JsonResponse(payload, status=200)
+
+        except models.Story.DoesNotExist:
+            payload = resp.generate_error(code=404, message="story not found")
+            return JsonResponse(payload, status=404)
+
+    def post(self, request, *args, **kwargs):
+        json_data = json.loads(request.body)
+
+        try:
+            user = models.User.objects.get(name=json_data["user_id"])
+            pub = models.Publication.objects.get(name=json_data["pub_id"])
+            stories = models.Story.objects.filter(
+                title=json_data["title"]
+            )
+            if stories.count() != 0:
+                payload = resp.generate_error(
+                    code=409,
+                    message="story already existed"
+                )
+                return JsonResponse(payload, status=409)
+
+        except models.Publication.DoesNotExist:
+            payload = resp.generate_error(code=404, message="publication not found")
+            return JsonResponse(payload, status=404)
+
+        except models.User.DoesNotExist:
+            payload = resp.generate_error(code=404, message="user not found")
+            return JsonResponse(payload, status=404)
+        
+        tags = []
+        for x in json_data["tag"]:
+            try:
+                tags += [models.Tag.objects.get(name=x)]
+            except models.Tag.DoesNotExist:
+                tag = models.Tag(name=x)
+                tag.save()
+                tags += [models.Tag.objects.get(name=x)]
+        story = models.Story(
+            title=json_data["title"],
+            content=json_data["content"],
+            author=user,
+            publication=pub
+        )
+        story.save()
+        for tag in tags:
+            story.tag.add(tag)
+        story.save()
+
+        stories = models.Story.objects.filter(
+            title=json_data["title"],
+            author=user,
+            publication=pub
+        ).values(
+            "title", "content", "author__name", "publication__name"
+        )
+        payload = resp.generate_acknowledge(
+            code=201,
+            message="user registered",
+            data=list(stories)[0]
+        )
+        return JsonResponse(payload, status=201)
+
+class Story(View):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            stories = models.Story.objects.filter(
+                title=self.kwargs["story_id"]
+            ).values(
+                "title",
+                "content",
+                "author__name",
+                "publication__name"
+            )
+            payload = resp.generate_acknowledge(data=list(stories)[0])
+            return JsonResponse(payload, status=200)
+
+        except models.Story.DoesNotExist:
+            payload = resp.generate_error(code=404, message="story not found")
+            return JsonResponse(payload, status=404)
